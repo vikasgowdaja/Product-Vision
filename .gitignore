@@ -5,14 +5,17 @@ node_modules/
 
 # Build outputs
 .next/
+.next-*/
 dist/
 build/
 out/
+*.tsbuildinfo
 
 # Environment
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env.*.example
 
 # Logs
 *.log
@@ -31,7 +34,11 @@ Thumbs.db
 
 # Test coverage
 coverage/
+.animation-test-results/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
 
 # Generated files
 *.generated.ts
-prisma/migrations/

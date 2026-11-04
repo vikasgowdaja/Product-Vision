@@ -261,10 +261,6 @@ export default function GeneratePage() {
                     style={{ background: 'linear-gradient(135deg,#3b82f6,#8b5cf6)' }}>
                     Schedule to LinkedIn
                   </button>
-                  <button className="px-4 py-2.5 rounded-xl text-sm transition hover:bg-slate-700"
-                    style={{ background: '#1e293b', color: '#94a3b8', border: '1px solid #334155' }}>
-                    Download PNG
-                  </button>
                   <button onClick={() => { setStep(1); setSelectedNiche(''); setTopic(''); setDone(false); setAgentStatuses(Object.fromEntries(AGENTS.map(a => [a.id, 'idle'])) as Record<AgentId, AgentStatus>); }}
                     className="px-4 py-2.5 rounded-xl text-sm transition hover:bg-slate-700"
                     style={{ background: '#1e293b', color: '#94a3b8', border: '1px solid #334155' }}>

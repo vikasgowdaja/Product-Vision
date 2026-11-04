@@ -1,15 +1,12 @@
 'use client';
 
-import { useEffect, useId, useRef, useState } from 'react';
-import { useAnimate, useReducedMotion, type AnimationPlaybackControls, type AnimationSequence } from 'framer-motion';
-import { Pause, Play, RotateCcw } from 'lucide-react';
+import { useBrandAssets } from '../lib/brand-assets';
+import { InfographicAnimationEditor } from './infographic-animation-editor';
 
 interface InfographicPreviewProps {
   topic: string;
   niche: string;
 }
-
-type MotionPreset = 'static' | 'reveal' | 'spring';
 
 // ── Content database ─────────────────────────────────────────────────────────
 
@@ -107,7 +104,7 @@ function ComparisonLayout({ data, topic }: { data: NonNullable<ReturnType<typeof
   return (
     <div className="w-full">
       {/* Header */}
-      <div data-infographic-part className="text-center mb-4">
+      <div data-infographic-part data-node-id="root" className="text-center mb-4">
         <p className="text-xs font-semibold tracking-widest mb-1" style={{ color: '#60a5fa' }}>COMPARISON</p>
         <h2 className="text-base font-bold text-white leading-snug">{topic}</h2>
         {subtitle && <p className="text-xs mt-0.5" style={{ color: '#64748b' }}>{subtitle}</p>}
@@ -115,15 +112,15 @@ function ComparisonLayout({ data, topic }: { data: NonNullable<ReturnType<typeof
 
       {/* VS layout */}
       <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3">
-        {[left, right].map((side) => (
-          <div data-infographic-part key={side.label} className="min-w-0 rounded-lg p-3" style={{ background: side.accent, border: `1px solid ${side.color}40` }}>
+        {[left, right].map((side, sideIndex) => (
+          <div data-infographic-part data-node-id={`comparison-${sideIndex}`} key={side.label} className="min-w-0 rounded-lg p-3" style={{ background: side.accent, border: `1px solid ${side.color}40` }}>
             <div className="flex items-center gap-1.5 mb-3 pb-2" style={{ borderBottom: `1px solid ${side.color}30` }}>
               <span className="text-base">{side.icon}</span>
               <span className="text-sm font-bold" style={{ color: side.color }}>{side.label}</span>
             </div>
             <ul className="space-y-1.5">
-              {side.points.map(pt => (
-                <li data-infographic-part key={pt} className="flex items-start gap-1.5 text-xs" style={{ color: '#e2e8f0' }}>
+              {side.points.map((pt, pointIndex) => (
+                <li data-infographic-part data-element-id={`comparison-${sideIndex}-point-${pointIndex}`} key={pt} className="flex items-start gap-1.5 text-xs" style={{ color: '#e2e8f0' }}>
                   <span className="mt-0.5 text-xs flex-shrink-0" style={{ color: side.color }}>▸</span>
                   {pt}
                 </li>
@@ -149,14 +146,14 @@ function StepsLayout({ data, topic }: { data: NonNullable<ReturnType<typeof getC
   if (!steps) return null;
   return (
     <div className="w-full">
-      <div data-infographic-part className="text-center mb-4">
+      <div data-infographic-part data-node-id="root" className="text-center mb-4">
         <p className="text-xs font-semibold tracking-widest mb-1" style={{ color: '#60a5fa' }}>STEP-BY-STEP</p>
         <h2 className="text-base font-bold text-white leading-snug">{topic}</h2>
         {subtitle && <p className="text-xs mt-0.5" style={{ color: '#64748b' }}>{subtitle}</p>}
       </div>
       <div className="space-y-2">
         {steps.map((step) => (
-          <div data-infographic-part key={step.num} className="flex items-start gap-3 p-2.5 rounded-lg"
+          <div data-infographic-part data-node-id={`step-${step.num}`} key={step.num} className="flex items-start gap-3 p-2.5 rounded-lg"
             style={{ background: `${step.color}10`, border: `1px solid ${step.color}30` }}>
             <span className="text-sm font-black flex-shrink-0 w-7 text-center" style={{ color: step.color }}>{step.num}</span>
             <div>
@@ -174,13 +171,13 @@ function TipsLayout({ data, topic, niche }: { data: ReturnType<typeof FALLBACK_C
   const { tips } = data;
   return (
     <div className="w-full">
-      <div data-infographic-part className="text-center mb-4">
+      <div data-infographic-part data-node-id="root" className="text-center mb-4">
         <p className="text-xs font-semibold tracking-widest mb-1" style={{ color: '#60a5fa' }}>{niche.toUpperCase()}</p>
         <h2 className="text-base font-bold text-white leading-snug">{topic}</h2>
       </div>
       <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-2">
         {tips.map((tip, i) => (
-          <div data-infographic-part key={i} className="min-w-0 p-2.5 rounded-lg" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.15)' }}>
+          <div data-infographic-part data-node-id={`tip-${i}`} key={i} className="min-w-0 p-2.5 rounded-lg" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.15)' }}>
             <div className="flex items-center gap-1.5 mb-1">
               <span className="text-base">{tip.icon}</span>
               <span className="text-xs font-semibold text-white">{tip.title}</span>
@@ -199,19 +196,19 @@ function PillarsLayout({ data, topic }: { data: NonNullable<ReturnType<typeof ge
   const colors = ['#f97316', '#3b82f6', '#eab308'];
   return (
     <div className="w-full">
-      <div data-infographic-part className="text-center mb-4">
+      <div data-infographic-part data-node-id="root" className="text-center mb-4">
         <p className="text-xs font-semibold tracking-widest mb-1" style={{ color: '#60a5fa' }}>OVERVIEW</p>
         <h2 className="text-base font-bold text-white leading-snug">{topic}</h2>
         {subtitle && <p className="text-xs mt-0.5" style={{ color: '#64748b' }}>{subtitle}</p>}
       </div>
       <div className="grid grid-cols-1 min-[480px]:grid-cols-3 gap-2">
         {pillars.map((pillar, i) => (
-          <div data-infographic-part key={pillar.title} className="min-w-0 p-3 rounded-lg" style={{ background: `${colors[i]}10`, border: `1px solid ${colors[i]}30` }}>
+          <div data-infographic-part data-node-id={`pillar-${i}`} key={pillar.title} className="min-w-0 p-3 rounded-lg" style={{ background: `${colors[i]}10`, border: `1px solid ${colors[i]}30` }}>
             <div className="text-xl mb-1">{pillar.icon}</div>
             <p className="text-xs font-bold mb-2" style={{ color: colors[i] }}>{pillar.title}</p>
             <ul className="space-y-1">
-              {pillar.points.map(p => (
-                <li data-infographic-part key={p} className="text-xs flex items-start gap-1" style={{ color: '#94a3b8' }}>
+              {pillar.points.map((p, pointIndex) => (
+                <li data-infographic-part data-element-id={`pillar-${i}-point-${pointIndex}`} key={p} className="text-xs flex items-start gap-1" style={{ color: '#94a3b8' }}>
                   <span style={{ color: colors[i] }}>·</span> {p}
                 </li>
               ))}
@@ -231,111 +228,12 @@ function getContent(topic: string) {
 
 export function InfographicPreview({ topic, niche }: InfographicPreviewProps) {
   const content = getContent(topic);
-  const [scope, animate] = useAnimate<HTMLDivElement>();
-  const reducedMotion = useReducedMotion();
-  const [preset, setPreset] = useState<MotionPreset>('reveal');
-  const [speed, setSpeed] = useState(1);
-  const [playing, setPlaying] = useState(true);
-  const [completed, setCompleted] = useState(false);
-  const [replay, setReplay] = useState(0);
-  const playback = useRef<AnimationPlaybackControls | null>(null);
-  const speedRef = useRef(speed);
-  const speedId = useId();
-  const effectivePreset = reducedMotion ? 'static' : preset;
-  const motionEnabled = effectivePreset !== 'static';
-
-  useEffect(() => {
-    const elements = Array.from(scope.current.querySelectorAll<HTMLElement>('[data-infographic-part]'));
-    playback.current = null;
-    setCompleted(false);
-
-    if (effectivePreset === 'static') {
-      animate(elements, { opacity: 1, y: 0, scale: 1 }, { duration: 0 }).complete();
-      setPlaying(false);
-      return;
-    }
-
-    const sequence: AnimationSequence = elements.map((element, index) => [
-      element,
-      { opacity: [0, 1], y: [16, 0], scale: effectivePreset === 'spring' ? [0.97, 1] : [1, 1] },
-      {
-        at: index * 0.18,
-        ...(effectivePreset === 'spring'
-          ? { type: 'spring', duration: 0.85, bounce: 0.25 }
-          : { type: 'tween', duration: 0.55, ease: 'easeOut' }),
-      },
-    ]);
-    const controls = animate(sequence);
-    controls.speed = speedRef.current;
-    playback.current = controls;
-    setPlaying(true);
-    let active = true;
-    controls.then(() => {
-      if (active) {
-        setPlaying(false);
-        setCompleted(true);
-      }
-    });
-
-    return () => {
-      active = false;
-      controls.stop();
-    };
-  }, [animate, effectivePreset, niche, replay, scope, topic]);
-
-  useEffect(() => {
-    speedRef.current = speed;
-    if (playback.current) playback.current.speed = speed;
-  }, [speed]);
-
-  function togglePlayback() {
-    if (completed) {
-      setReplay(value => value + 1);
-      return;
-    }
-    if (!playback.current) return;
-    if (playing) playback.current.pause();
-    else playback.current.play();
-    setPlaying(!playing);
-  }
+  const { assets } = useBrandAssets();
 
   return (
-    <div className="w-full min-w-0 space-y-3">
-      <div className="flex flex-wrap items-center gap-3 border-b border-slate-700 pb-3">
-        <div role="group" aria-label="Motion preset" className="inline-flex rounded-md border border-slate-600 p-1">
-          {(['static', 'reveal', 'spring'] as const).map(value => (
-            <button key={value} type="button" aria-pressed={effectivePreset === value}
-              disabled={Boolean(reducedMotion) && value !== 'static'} onClick={() => setPreset(value)}
-              className="rounded px-3 py-1.5 text-xs font-medium capitalize transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-400 disabled:opacity-40"
-              style={{ background: effectivePreset === value ? '#334155' : 'transparent', color: effectivePreset === value ? '#f1f5f9' : '#94a3b8' }}>
-              {value}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={togglePlayback} disabled={!motionEnabled}
-            aria-label={playing ? 'Pause animation' : completed ? 'Play again' : 'Play animation'}
-            title={playing ? 'Pause animation' : completed ? 'Play again' : 'Play animation'}
-            className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-600 text-slate-200 hover:bg-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-400 disabled:opacity-40 disabled:cursor-not-allowed">
-            {playing ? <Pause size={16} aria-hidden="true" /> : <Play size={16} aria-hidden="true" />}
-          </button>
-          <button type="button" onClick={() => setReplay(value => value + 1)} disabled={!motionEnabled}
-            aria-label="Replay animation" title="Replay animation"
-            className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-600 text-slate-200 hover:bg-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-400 disabled:opacity-40 disabled:cursor-not-allowed">
-            <RotateCcw size={16} aria-hidden="true" />
-          </button>
-          <label htmlFor={speedId} className="text-xs text-slate-400">Speed</label>
-          <select id={speedId} value={speed} onChange={event => setSpeed(Number(event.target.value))} disabled={!motionEnabled}
-            className="h-9 rounded-md border border-slate-600 bg-slate-800 px-2 text-xs text-slate-200 disabled:opacity-40">
-            {[0.5, 1, 1.5, 2].map(value => <option key={value} value={value}>{value}x</option>)}
-          </select>
-        </div>
-        <span role="status" className="text-xs text-slate-400">
-          {reducedMotion ? 'Reduced motion' : !motionEnabled ? 'Static' : completed ? 'Finished' : playing ? 'Playing' : 'Paused'}
-        </span>
-      </div>
-    <div ref={scope} className="w-full rounded-lg overflow-hidden break-words"
-      style={{ background: 'linear-gradient(160deg,#0d1b2e 0%,#0f172a 60%,#0d1b2e 100%)', border: '1px solid #1e3a8a' }}>
+    <InfographicAnimationEditor key={topic} topic={topic} layout={content?.type ?? 'tips'}>
+    <div data-infographic-canvas data-infographic-layout={content?.type ?? 'tips'} className="w-full rounded-lg overflow-hidden break-words"
+      style={{ position: 'relative', background: 'linear-gradient(160deg,#0d1b2e 0%,#0f172a 60%,#0d1b2e 100%)', border: '1px solid #1e3a8a' }}>
 
       {/* Top brand bar */}
       <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg,#3b82f6,#8b5cf6,#ec4899)' }} />
@@ -346,7 +244,9 @@ export function InfographicPreview({ topic, niche }: InfographicPreviewProps) {
           style={{ background: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.3)' }}>
           {niche.toUpperCase()}
         </span>
-        <span className="text-xs" style={{ color: '#1e3a8a' }}>InfographAI</span>
+        {assets.logo ? (
+          <img src={assets.logo.dataUrl} alt="Brand logo" style={{ width: 90, height: 32, objectFit: 'contain' }} />
+        ) : <span className="text-xs" style={{ color: '#1e3a8a' }}>InfographAI</span>}
       </div>
 
       {/* Content */}
@@ -355,6 +255,9 @@ export function InfographicPreview({ topic, niche }: InfographicPreviewProps) {
         {content?.type === 'comparison' && <ComparisonLayout data={content} topic={topic} />}
         {content?.type === 'steps' && <StepsLayout data={content} topic={topic} />}
         {content?.type === 'pillars' && <PillarsLayout data={content} topic={topic} />}
+        {assets.image && <div data-node-id="uploaded-image" className="mt-3">
+          <img src={assets.image.dataUrl} alt={assets.image.name} style={{ display: 'block', maxHeight: 240, width: '100%', objectFit: 'contain' }} />
+        </div>}
       </div>
 
       {/* Footer bar */}
@@ -363,6 +266,6 @@ export function InfographicPreview({ topic, niche }: InfographicPreviewProps) {
         <span className="text-xs" style={{ color: '#1e3a8a' }}>1080 × 1080</span>
       </div>
     </div>
-    </div>
+    </InfographicAnimationEditor>
   );
 }
