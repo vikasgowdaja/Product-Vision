@@ -1,0 +1,14 @@
+{
+  "name": "@infograph-ai/agent-infographic-designer",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "scripts": { "build": "tsc", "lint": "eslint src/**/*.ts" },
+  "dependencies": {
+    "@nestjs/common": "^10.3.0",
+    "@nestjs/config": "^3.2.0",
+    "openai": "^4.50.0",
+    "@aws-sdk/client-s3": "^3.600.0"
+  },
+  "devDependencies": { "typescript": "^5.4.0" }
+}

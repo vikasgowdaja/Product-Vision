@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "lib": ["ES2022"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "paths": {
+      "@infograph-ai/shared": ["./packages/shared/src/index.ts"],
+      "@infograph-ai/agents/*": ["./packages/agents/*/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "dist", ".next", "coverage"]
+}
