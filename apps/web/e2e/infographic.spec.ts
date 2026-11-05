@@ -10,6 +10,55 @@ async function generate(page: Page, niche: string, topic: string) {
   await expect(page.getByRole('checkbox', { name: 'Animation', exact: true })).toBeVisible({ timeout: 25000 });
 }
 
+test('freeform canvas connects cards and restores the edited document', async ({ page }) => {
+  const topic = 'GitOps vs Traditional CI/CD';
+  await generate(page, 'DevOps', topic);
+  await page.getByRole('tab', { name: 'Freeform canvas' }).click();
+  await expect(page.locator('article[data-node-id]')).toHaveCount(3);
+  await page.getByRole('button', { name: 'Add card' }).click();
+  await page.getByLabel('Title', { exact: true }).fill('Added node');
+
+  const source = page.getByRole('button', { name: 'Connect from GitOps right' });
+  const target = page.getByRole('button', { name: 'Connect from Traditional CI/CD left' });
+  await source.scrollIntoViewIfNeeded();
+  const sourceBox = await source.boundingBox();
+  const targetBox = await target.boundingBox();
+  expect(sourceBox).not.toBeNull();
+  expect(targetBox).not.toBeNull();
+  await page.mouse.move(sourceBox!.x + sourceBox!.width / 2, sourceBox!.y + sourceBox!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(targetBox!.x + targetBox!.width / 2, targetBox!.y + targetBox!.height / 2, { steps: 8 });
+  await page.mouse.up();
+  await expect(page.locator('[data-edge-id]')).toHaveCount(3);
+
+  const svgWaiting = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export SVG', exact: true }).click();
+  const svgDownload = await svgWaiting;
+  const svg = await readFile((await svgDownload.path())!);
+  expect(svg.toString()).toContain('<svg');
+  expect(svg.toString()).toContain('GitOps');
+
+  const pngWaiting = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export PNG', exact: true }).click();
+  const pngDownload = await pngWaiting;
+  const png = await readFile((await pngDownload.path())!);
+  expect(png.subarray(1, 4).toString()).toBe('PNG');
+
+  const gifWaiting = page.waitForEvent('download', { timeout: 60000 });
+  await page.getByRole('button', { name: 'Export GIF', exact: true }).click();
+  const gifDownload = await gifWaiting;
+  const gif = await readFile((await gifDownload.path())!);
+  expect(gif.subarray(0, 6).toString()).toBe('GIF89a');
+  expect(gif.readUInt16LE(6)).toBeGreaterThan(0);
+  expect(gif.readUInt16LE(8)).toBeGreaterThan(0);
+
+  await page.reload();
+  await generate(page, 'DevOps', topic);
+  await page.getByRole('tab', { name: 'Freeform canvas' }).click();
+  await expect(page.getByText('Added node', { exact: true })).toBeVisible();
+  await expect(page.locator('[data-edge-id]')).toHaveCount(3);
+});
+
 test('uploads persist and static and animated exports contain real content', async ({ page }, testInfo) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));

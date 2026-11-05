@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "jest",
-    "test:unit": "tsx --test lib/infographic-animation.test.ts",
+    "test:unit": "tsx --test lib/infographic-animation.test.ts lib/freeform-canvas.test.ts",
     "test:animation": "playwright test"
   },
   "dependencies": {

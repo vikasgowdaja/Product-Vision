@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { useBrandAssets } from '../lib/brand-assets';
 import { InfographicAnimationEditor } from './infographic-animation-editor';
+import { FreeformInfographicEditor } from './freeform-infographic-editor';
 
 interface InfographicPreviewProps {
   topic: string;
@@ -229,8 +231,23 @@ function getContent(topic: string) {
 export function InfographicPreview({ topic, niche }: InfographicPreviewProps) {
   const content = getContent(topic);
   const { assets } = useBrandAssets();
+  const [editorMode, setEditorMode] = useState<'preview' | 'canvas'>('preview');
+  const canvasNodes = [
+    { id: 'headline', title: topic, body: content?.subtitle ?? `${niche} infographic` },
+    ...(content?.type === 'comparison' ? [content.left, content.right].filter((side): side is NonNullable<typeof side> => Boolean(side)).map(side => ({ id: side.label.toLowerCase().replace(/[^a-z0-9]+/g, '-'), title: side.label, body: side.points.join('\n') })) : []),
+    ...(content?.type === 'steps' ? (content.steps ?? []).map(step => ({ id: `step-${step.num}`, title: `${step.num} · ${step.title}`, body: step.desc })) : []),
+    ...(content?.type === 'tips' ? (content.tips ?? []).map((tip, index) => ({ id: `tip-${index}`, title: tip.title, body: tip.desc })) : []),
+    ...(content?.type === 'pillars' ? (content.pillars ?? []).map(pillar => ({ id: pillar.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'), title: pillar.title, body: pillar.points.join('\n') })) : []),
+    ...(!content ? FALLBACK_CONTENT(topic, niche).tips.map((tip, index) => ({ id: `tip-${index}`, title: tip.title, body: tip.desc })) : []),
+  ];
 
   return (
+    <div className="min-w-0 space-y-3">
+    <div className="flex gap-1 border-b border-slate-800" role="tablist" aria-label="Infographic view">
+      <button type="button" role="tab" aria-selected={editorMode === 'preview'} onClick={() => setEditorMode('preview')} className={`border-b-2 px-3 py-2 text-xs ${editorMode === 'preview' ? 'border-cyan-400 text-cyan-200' : 'border-transparent text-slate-400 hover:text-slate-200'}`}>Preview and animation</button>
+      <button type="button" role="tab" aria-selected={editorMode === 'canvas'} onClick={() => setEditorMode('canvas')} className={`border-b-2 px-3 py-2 text-xs ${editorMode === 'canvas' ? 'border-cyan-400 text-cyan-200' : 'border-transparent text-slate-400 hover:text-slate-200'}`}>Freeform canvas</button>
+    </div>
+    {editorMode === 'canvas' ? <FreeformInfographicEditor topic={topic} nodes={canvasNodes} /> :
     <InfographicAnimationEditor key={topic} topic={topic} layout={content?.type ?? 'tips'}>
     <div data-infographic-canvas data-infographic-layout={content?.type ?? 'tips'} className="w-full rounded-lg overflow-hidden break-words"
       style={{ position: 'relative', background: 'linear-gradient(160deg,#0d1b2e 0%,#0f172a 60%,#0d1b2e 100%)', border: '1px solid #1e3a8a' }}>
@@ -267,5 +284,7 @@ export function InfographicPreview({ topic, niche }: InfographicPreviewProps) {
       </div>
     </div>
     </InfographicAnimationEditor>
+    }
+    </div>
   );
 }
