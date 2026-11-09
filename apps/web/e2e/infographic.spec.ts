@@ -211,8 +211,10 @@ test('exports cancel cleanly, preserve original dimensions and enforce size limi
   await expect(page.getByRole('status').filter({ hasText: 'Export cancelled.' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Export GIF', exact: true })).toBeEnabled();
   await expect(page.locator('[aria-hidden="true"] [data-infographic-canvas]')).toHaveCount(0);
-  await page.getByLabel('Duration (s)', { exact: true }).fill('2');
+  await page.getByLabel('Duration (s)', { exact: true }).fill('4');
+  await page.getByLabel('Speed', { exact: true }).selectOption('3');
   await page.getByLabel('GIF frame rate', { exact: true }).selectOption('5');
+  await page.getByLabel('GIF loop duration', { exact: true }).fill('2');
   await page.getByLabel('Export resolution', { exact: true }).selectOption('0');
   await page.getByText('Timeline and particles', { exact: true }).click();
   await page.getByLabel('Infinite loop', { exact: true }).uncheck();
@@ -234,6 +236,7 @@ test('exports cancel cleanly, preserve original dimensions and enforce size limi
   await page.getByLabel('Export resolution', { exact: true }).selectOption('2160');
   await page.getByLabel('Duration (s)', { exact: true }).fill('20');
   await page.getByLabel('GIF frame rate', { exact: true }).selectOption('24');
+  await page.getByLabel('GIF loop duration', { exact: true }).fill('20');
   await page.getByRole('button', { name: 'Export GIF', exact: true }).click();
   await expect(page.getByRole('alert').filter({ hasText: 'This export is too large.' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Export GIF', exact: true })).toBeEnabled();

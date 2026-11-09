@@ -23,6 +23,7 @@ export function InfographicAnimationEditor({ children, layout, topic }: { childr
   const [resolution, setResolution] = useState(1080);
   const [fps, setFps] = useState(12);
   const [colors, setColors] = useState(128);
+  const [gifLoopDuration, setGifLoopDuration] = useState(DEFAULT_ANIMATION.duration);
   const wrapper = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<DomScene | null>(null);
   const configRef = useRef(config);
@@ -124,7 +125,7 @@ export function InfographicAnimationEditor({ children, layout, topic }: { childr
     try {
       const { exportGif, exportStatic, downloadBlob } = await import('../lib/infographic-export');
       const blob = format === 'gif'
-        ? await exportGif(root, scene, configRef.current, { width: resolution, fps, colors }, controller.signal, setProgress)
+        ? await exportGif(root, scene, configRef.current, { width: resolution, fps, colors, loopDuration: gifLoopDuration }, controller.signal, setProgress)
         : await exportStatic(root, scene, configRef.current, format, resolution);
       if (controller.signal.aborted) throw new DOMException('Export cancelled.', 'AbortError');
       if (blob.size > 50 * 1024 * 1024) throw new Error('The file exceeds 50 MB. Lower resolution or frame rate and try again.');
@@ -215,6 +216,7 @@ export function InfographicAnimationEditor({ children, layout, topic }: { childr
         <label className="space-y-1 text-xs text-slate-400">Resolution<select aria-label="Export resolution" value={resolution} onChange={event => setResolution(Number(event.target.value))} className={INPUT}>{[0, 720, 1080, 1440, 2160].map(value => <option key={value} value={value}>{value ? `${value}px wide` : 'Original dimensions'}</option>)}</select></label>
         <label className="space-y-1 text-xs text-slate-400">Frame rate<select aria-label="GIF frame rate" value={fps} onChange={event => setFps(Number(event.target.value))} className={INPUT}>{[5, 8, 10, 12, 15, 20, 24].map(value => <option key={value} value={value}>{value} fps</option>)}</select></label>
         <label className="space-y-1 text-xs text-slate-400">GIF quality<select aria-label="GIF quality" value={colors} onChange={event => setColors(Number(event.target.value))} className={INPUT}><option value="64">Compact (64 colors)</option><option value="128">Balanced (128 colors)</option><option value="256">High (256 colors)</option></select></label>
+        <label className="space-y-1 text-xs text-slate-400">GIF loop duration (s)<input aria-label="GIF loop duration" type="number" min="0.25" max="60" step="0.25" value={gifLoopDuration} onChange={event => setGifLoopDuration(Math.min(60, Math.max(0.25, Number(event.target.value))))} className={INPUT} /></label>
       </div>
       <div className="flex flex-wrap gap-2">
         <button type="button" disabled={!ready} className={BUTTON} onClick={() => void exportFile('png')}><Download size={15} aria-hidden="true" />Download PNG</button>

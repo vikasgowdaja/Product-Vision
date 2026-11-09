@@ -10,6 +10,7 @@ import { ContentWriterAgent } from '../../../../packages/agents/content-writer/s
 import { InfographicDesignerAgent } from '../../../../packages/agents/infographic-designer/src';
 import { QualityVerifierAgent } from '../../../../packages/agents/quality-verifier/src';
 import { LinkedInPublisherAgent } from '../../../../packages/agents/linkedin-publisher/src';
+import { createSequentialAutomationWorkflow, type AutomationFlowNode } from '@infograph-ai/shared';
 
 interface PipelineJobData {
   infographicId: string;
@@ -37,6 +38,18 @@ export class AgentPipelineProcessor {
   async handle(job: Job<PipelineJobData>) {
     const { infographicId, niche, topic } = job.data;
     const trace: Record<string, unknown> = {};
+    trace.workflow = createSequentialAutomationWorkflow(
+      `workflow-${infographicId}`,
+      `${topic || niche} automation pipeline`,
+      [
+        { id: 'trend-research', kind: 'agent', label: 'Trend Research', config: { agentId: 'trend-research' } },
+        { id: 'content-strategist', kind: 'agent', label: 'Content Strategist', config: { agentId: 'content-strategist' } },
+        { id: 'content-writer', kind: 'agent', label: 'Content Writer', config: { agentId: 'content-writer' } },
+        { id: 'infographic-designer', kind: 'agent', label: 'Infographic Designer', config: { agentId: 'infographic-designer' } },
+        { id: 'quality-verifier', kind: 'agent', label: 'Quality Verifier', config: { agentId: 'quality-verifier' } },
+        { id: 'linkedin-publisher', kind: 'agent', label: 'LinkedIn Publisher', config: { agentId: 'linkedin-publisher' } },
+      ] satisfies AutomationFlowNode[],
+    );
 
     const update = (status: Infographic['status']) =>
       this.infographicRepo.update(infographicId, { status, agentTrace: trace });

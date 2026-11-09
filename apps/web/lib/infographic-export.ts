@@ -2,7 +2,7 @@ import { getFontEmbedCSS, toCanvas, toSvg } from 'html-to-image';
 import { frameAt, timelineSchedule, type AnimationConfig, type FrameState } from './infographic-animation';
 import { measureScene, pointOnPath, type DomScene } from './infographic-dom';
 
-export interface ExportOptions { width: number; fps: number; colors: number }
+export interface ExportOptions { width: number; fps: number; colors: number; loopDuration: number }
 export interface ExportProgress { stage: string; progress: number }
 
 export function downloadBlob(blob: Blob, name: string) {
@@ -162,7 +162,7 @@ function composite(context: CanvasRenderingContext2D, scene: DomScene, layers: L
 export async function exportGif(source: HTMLElement, original: DomScene, config: AnimationConfig, options: ExportOptions, signal: AbortSignal, progress: (value: ExportProgress) => void) {
   const width = Math.round(options.width || original.width);
   const height = Math.round(width / original.width * original.height);
-  const seconds = config.duration / config.speed;
+  const seconds = options.loopDuration;
   const frameCount = Math.max(2, Math.round(seconds * options.fps));
   if (frameCount > 360 || width * height > 8000000 || width * height * frameCount > 350000000) {
     throw new Error('This export is too large. Reduce resolution, duration, or frame rate, or increase playback speed (maximum 360 frames and 350 million total pixels).');
