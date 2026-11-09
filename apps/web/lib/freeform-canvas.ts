@@ -6,6 +6,8 @@ export interface CanvasNode {
   id: string;
   title: string;
   body: string;
+  icon?: string;
+  color?: string;
   position: CanvasPoint;
   width: number;
   height: number;
@@ -54,9 +56,11 @@ function finite(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
-export function seedDocument(title: string, items: Array<Pick<CanvasNode, 'id' | 'title' | 'body'>>): CanvasDocument {
+export function seedDocument(title: string, items: Array<Pick<CanvasNode, 'id' | 'title' | 'body'> & Partial<Pick<CanvasNode, 'icon' | 'color'>>>): CanvasDocument {
   const nodes = items.map((item, index): CanvasNode => ({
     ...item,
+    icon: item.icon ?? '',
+    color: item.color ?? '#60a5fa',
     position: { x: 80 + index * 120, y: 120 + index * 180 },
     width: DEFAULT_NODE_WIDTH,
     height: DEFAULT_NODE_HEIGHT,

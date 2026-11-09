@@ -65,12 +65,10 @@ function canvasSvg(document: CanvasDocument, region: ExportRegion, selectedIds: 
   const paths = edges.map(edge => {
     const geometry = edgeGeometry(edge, document.nodes);
     const animated = edge.animation.enabled;
-    const progress = animated && animationTime !== undefined ? Math.min(1, animationTime / edge.animation.duration) : 1;
-    const dash = animated && animationTime !== undefined ? '1' : edge.dash === 'dashed' ? '8 6' : edge.dash === 'dotted' ? '2 6' : 'none';
+    const dash = edge.dash === 'dashed' ? '8 6' : edge.dash === 'dotted' ? '2 6' : 'none';
     const marker = edge.direction === 'forward' ? 'url(#arrow)' : edge.direction === 'reverse' ? 'url(#arrow-reverse)' : edge.direction === 'both' ? 'url(#arrow) url(#arrow-reverse)' : 'none';
     const label = edge.label ? `<text x="${(geometry.start.x + geometry.end.x) / 2}" y="${(geometry.start.y + geometry.end.y) / 2 - 8}" fill="#e2e8f0" font-size="13" text-anchor="middle">${escapeXml(edge.label)}</text>` : '';
-    const motion = animated && animationTime === undefined ? `<animate attributeName="stroke-dashoffset" from="1" to="0" dur="${edge.animation.duration}s" repeatCount="indefinite"/>` : '';
-    const path = `<path d="${geometry.path}" fill="none" stroke="${escapeXml(edge.color)}" stroke-width="${edge.width}" stroke-dasharray="${dash}" stroke-dashoffset="${1 - progress}" pathLength="${animated ? 1 : 0}" marker-end="${marker}">${motion}</path>`;
+    const path = `<path d="${geometry.path}" fill="none" stroke="${escapeXml(edge.color)}" stroke-width="${edge.width}" stroke-dasharray="${dash}" marker-end="${marker}"/>`;
     const particles = !animated ? '' : Array.from({ length: edge.animation.particles }, (_, index) => {
       if (animationTime === undefined) {
         const keyPoints = edge.animation.reverse ? '1;0' : '0;1';
@@ -85,7 +83,10 @@ function canvasSvg(document: CanvasDocument, region: ExportRegion, selectedIds: 
   const cards = nodes.map(node => {
     const textLines = wrapText(node.body, Math.max(12, Math.floor((node.width - 32) / 7))).slice(0, Math.max(0, Math.floor((node.height - 54) / 18)));
     const body = textLines.map((line, index) => `<tspan x="${node.position.x + 16}" dy="${index ? 18 : 0}">${escapeXml(line)}</tspan>`).join('');
-    return `<rect x="${node.position.x}" y="${node.position.y}" width="${node.width}" height="${node.height}" rx="8" fill="#17212b" stroke="#536477"/><text x="${node.position.x + 16}" y="${node.position.y + 26}" fill="#f8fafc" font-family="sans-serif" font-size="16" font-weight="700">${escapeXml(node.title)}</text><path d="M ${node.position.x + 12} ${node.position.y + 38} H ${node.position.x + node.width - 12}" stroke="#334155"/><text x="${node.position.x + 16}" y="${node.position.y + 58}" fill="#cbd5e1" font-family="sans-serif" font-size="13">${body}</text>`;
+    const color = node.color ?? '#60a5fa';
+    const icon = node.icon ? `<text x="${node.position.x + 16}" y="${node.position.y + 26}" fill="${escapeXml(color)}" font-family="sans-serif" font-size="16">${escapeXml(node.icon)}</text>` : '';
+    const titleX = node.position.x + (node.icon ? 42 : 16);
+    return `<rect x="${node.position.x}" y="${node.position.y}" width="${node.width}" height="${node.height}" rx="8" fill="${escapeXml(color)}" fill-opacity="0.12" stroke="${escapeXml(color)}"/><text x="${titleX}" y="${node.position.y + 26}" fill="${escapeXml(color)}" font-family="sans-serif" font-size="16" font-weight="700">${escapeXml(node.title)}</text>${icon}<path d="M ${node.position.x + 12} ${node.position.y + 38} H ${node.position.x + node.width - 12}" stroke="${escapeXml(color)}" stroke-opacity="0.35"/><text x="${node.position.x + 16}" y="${node.position.y + 58}" fill="#cbd5e1" font-family="sans-serif" font-size="13">${body}</text>`;
   }).join('');
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${bounds.width}" height="${bounds.height}" viewBox="${bounds.x} ${bounds.y} ${bounds.width} ${bounds.height}"><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker><marker id="arrow-reverse" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 10 0 L 0 5 L 10 10 z" fill="context-stroke"/></marker></defs><rect x="${bounds.x}" y="${bounds.y}" width="${bounds.width}" height="${bounds.height}" fill="${escapeXml(document.background.color)}"/>${paths}${cards}</svg>`;
 }
@@ -153,7 +154,7 @@ function download(blob: Blob, name: string) {
   URL.revokeObjectURL(url);
 }
 
-export function FreeformInfographicEditor({ topic, nodes }: { topic: string; nodes: Array<Pick<CanvasNode, 'id' | 'title' | 'body'>> }) {
+export function FreeformInfographicEditor({ topic, nodes }: { topic: string; nodes: Array<Pick<CanvasNode, 'id' | 'title' | 'body'> & Partial<Pick<CanvasNode, 'icon' | 'color'>>> }) {
   const [document, setDocument] = useState(() => seedDocument(topic, nodes));
   const [tool, setTool] = useState<Tool>('select');
   const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
@@ -226,7 +227,7 @@ export function FreeformInfographicEditor({ topic, nodes }: { topic: string; nod
   function addNode() {
     const position = { x: 120, y: 120 };
     while (document.nodes.some(item => position.x < item.position.x + item.width && position.x + 260 > item.position.x && position.y < item.position.y + item.height && position.y + 150 > item.position.y)) position.y += 182;
-    const node: CanvasNode = { id: makeId('card'), title: 'New card', body: 'Add your content', position, width: 260, height: 150, rotation: 0, zIndex: Math.max(0, ...document.nodes.map(item => item.zIndex)) + 1 };
+    const node: CanvasNode = { id: makeId('card'), title: 'New card', body: 'Add your content', icon: '✦', color: '#38bdf8', position, width: 260, height: 150, rotation: 0, zIndex: Math.max(0, ...document.nodes.map(item => item.zIndex)) + 1 };
     commit({ ...document, nodes: [...document.nodes, node] });
     setSelectedNodes([node.id]); setSelectedEdge(null); setTool('select');
   }
@@ -400,7 +401,7 @@ export function FreeformInfographicEditor({ topic, nodes }: { topic: string; nod
       ? { backgroundImage: 'linear-gradient(to right, #334155 1px, transparent 1px), linear-gradient(to bottom, #334155 1px, transparent 1px)', backgroundSize: `${document.background.gridSize}px ${document.background.gridSize}px` }
       : {};
 
-  return <section className="min-w-0 space-y-3" onKeyDown={onKeyDown} tabIndex={0} aria-label="Freeform infographic editor">
+  return <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-3" onKeyDown={onKeyDown} tabIndex={0} aria-label="Freeform infographic editor">
     <div className="flex flex-wrap items-center gap-1 border-y border-slate-700 py-2">
       <button type="button" className={`${BUTTON} ${tool === 'select' ? '!border-cyan-400 !text-cyan-200' : ''}`} title="Select and move" aria-label="Select tool" onClick={() => setTool('select')}><MousePointer2 size={16} /></button>
       <button type="button" className={`${BUTTON} ${tool === 'pan' ? '!border-cyan-400 !text-cyan-200' : ''}`} title="Pan workspace" aria-label="Pan tool" onClick={() => setTool('pan')}><Hand size={16} /></button>
@@ -419,8 +420,8 @@ export function FreeformInfographicEditor({ topic, nodes }: { topic: string; nod
       <span className="ml-auto text-xs text-slate-400">{document.nodes.length} cards · {document.edges.length} connections</span>
     </div>
 
-    <div className="grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1fr)_230px]">
-      <div ref={workspace} className="relative h-[560px] min-w-0 touch-none overflow-hidden rounded border border-slate-700 outline-none" style={{ backgroundColor: document.background.color, ...gridStyle, cursor: tool === 'pan' ? 'grab' : tool === 'connect' ? 'crosshair' : 'default' }} onWheel={onWheel} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
+    <div className="grid min-h-0 min-w-0 flex-1 gap-3 xl:grid-cols-[minmax(0,1fr)_230px]">
+      <div ref={workspace} className="relative h-full min-h-[320px] min-w-0 touch-none overflow-hidden rounded border border-slate-700 outline-none" style={{ backgroundColor: document.background.color, ...gridStyle, cursor: tool === 'pan' ? 'grab' : tool === 'connect' ? 'crosshair' : 'default' }} onWheel={onWheel} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
         <div className="pointer-events-none absolute inset-0" style={{ transform: `translate(${document.viewport.x}px, ${document.viewport.y}px) scale(${document.viewport.zoom})`, transformOrigin: '0 0' }}>
           <div className="absolute border border-dashed border-slate-500/60" style={{ left: document.frame.x, top: document.frame.y, width: document.frame.width, height: document.frame.height }} />
         </div>
@@ -432,7 +433,7 @@ export function FreeformInfographicEditor({ topic, nodes }: { topic: string; nod
               const dash = edge.dash === 'dashed' ? '8 6' : edge.dash === 'dotted' ? '2 6' : 'none';
               return <g key={edge.id} data-edge-id={edge.id} onPointerDown={event => { event.stopPropagation(); setSelectedEdge(edge.id); setSelectedNodes([]); }}>
                 <path d={geometry.path} fill="none" stroke="transparent" strokeWidth={18} className="pointer-events-stroke" />
-                <path d={geometry.path} fill="none" stroke={selectedEdge === edge.id ? '#fbbf24' : edge.color} strokeWidth={edge.width} strokeDasharray={dash} markerEnd={edge.direction === 'forward' || edge.direction === 'both' ? 'url(#freeform-arrow)' : undefined} markerStart={edge.direction === 'reverse' || edge.direction === 'both' ? 'url(#freeform-arrow)' : undefined} style={edge.animation.enabled ? { strokeDasharray: '12 8', animation: `${edge.animation.reverse ? 'freeform-flow-reverse' : 'freeform-flow'} 1.2s linear infinite` } : undefined} />
+                <path d={geometry.path} fill="none" stroke={selectedEdge === edge.id ? '#fbbf24' : edge.color} strokeWidth={edge.width} strokeDasharray={dash} markerEnd={edge.direction === 'forward' || edge.direction === 'both' ? 'url(#freeform-arrow)' : undefined} markerStart={edge.direction === 'reverse' || edge.direction === 'both' ? 'url(#freeform-arrow)' : undefined} />
                 {edge.label && <text x={(geometry.start.x + geometry.end.x) / 2} y={(geometry.start.y + geometry.end.y) / 2 - 8} fill="#e2e8f0" fontSize="13" textAnchor="middle">{edge.label}</text>}
                 {edge.animation.enabled && Array.from({ length: edge.animation.particles }, (_, index) => <circle key={index} r="4" fill={edge.color}><animateMotion dur={`${edge.animation.duration}s`} begin={`${-index * edge.animation.duration / Math.max(1, edge.animation.particles)}s`} repeatCount="indefinite" path={geometry.path} /></circle>)}
                 {selectedEdge === edge.id && edge.kind === 'bezier' && geometry.controls.map((point, index) => <g key={index} data-control="true" onPointerDown={event => { event.stopPropagation(); gesture.current = { kind: 'control', client: { x: event.clientX, y: event.clientY }, before: document, edgeId: edge.id, index: index as 0 | 1 }; workspace.current?.setPointerCapture(event.pointerId); }}><line x1={geometry.start.x} y1={geometry.start.y} x2={point.x} y2={point.y} stroke="#fbbf24" strokeDasharray="3 3" /><circle cx={point.x} cy={point.y} r="7" fill="#fbbf24" stroke="#0f172a" strokeWidth="2" className="cursor-move" /></g>)}
@@ -446,23 +447,28 @@ export function FreeformInfographicEditor({ topic, nodes }: { topic: string; nod
               return <path d={`M ${point.x} ${point.y} L ${connectionPointer.x} ${connectionPointer.y}`} stroke="#67e8f9" strokeWidth="2" strokeDasharray="6 4" fill="none" />;
             })()}
           </svg>
-          {document.nodes.slice().sort((a, b) => a.zIndex - b.zIndex).map(node => <article key={node.id} data-node-id={node.id} onPointerEnter={() => setHoveredNode(node.id)} onPointerLeave={() => setHoveredNode(value => value === node.id ? null : value)} onPointerDown={event => startMove(event, node)} className={`pointer-events-auto absolute box-border select-none rounded border p-3 text-slate-100 shadow-lg ${selectedNodes.includes(node.id) ? 'border-cyan-400 ring-2 ring-cyan-400/30' : 'border-slate-600'}`} style={{ left: node.position.x, top: node.position.y, width: node.width, height: node.height, zIndex: node.zIndex + 1, background: '#17212b', cursor: tool === 'select' ? 'move' : 'default' }}>
+          {document.nodes.slice().sort((a, b) => a.zIndex - b.zIndex).map(node => {
+            const color = node.color ?? '#60a5fa';
+            return <article key={node.id} data-node-id={node.id} onPointerEnter={() => setHoveredNode(node.id)} onPointerLeave={() => setHoveredNode(value => value === node.id ? null : value)} onPointerDown={event => startMove(event, node)} className={`pointer-events-auto absolute box-border select-none rounded border p-3 text-slate-100 shadow-lg ${selectedNodes.includes(node.id) ? 'ring-2 ring-cyan-400/30' : ''}`} style={{ left: node.position.x, top: node.position.y, width: node.width, height: node.height, zIndex: node.zIndex + 1, borderColor: selectedNodes.includes(node.id) ? '#22d3ee' : color, background: `color-mix(in srgb, ${color} 12%, #17212b)`, cursor: tool === 'select' ? 'move' : 'default' }}>
             <div className="mb-2 flex items-center justify-between gap-2 border-b border-slate-700 pb-2">
-              <span className="truncate text-sm font-semibold">{node.title}</span>
+              <span className="flex min-w-0 items-center gap-2 truncate text-sm font-semibold"><span className="shrink-0" style={{ color }}>{node.icon}</span><span className="truncate" style={{ color }}>{node.title}</span></span>
               <button type="button" className="text-[10px] text-slate-500 hover:text-slate-200" title="Bring card forward" aria-label="Bring card forward" onPointerDown={event => event.stopPropagation()} onClick={() => updateNode(node.id, { zIndex: Math.max(...document.nodes.map(item => item.zIndex)) + 1 })}><ArrowUp size={13} /></button>
             </div>
             <p className="overflow-hidden whitespace-pre-wrap text-xs leading-5 text-slate-300">{node.body}</p>
             {HANDLES.map(handle => <button key={handle} type="button" data-anchor={handle} data-node-id={node.id} aria-label={`Connect from ${node.title} ${handle}`} title={`Connect ${handle}`} onPointerDown={event => startConnect(event, node, handle)} className={`absolute h-3 w-3 rounded-full border border-slate-950 bg-cyan-300 transition-opacity ${hoveredNode === node.id || selectedNodes.includes(node.id) || tool === 'connect' ? 'opacity-100' : 'opacity-0'}`} style={{ left: handle === 'left' ? -6 : handle === 'right' ? 'auto' : '50%', right: handle === 'right' ? -6 : 'auto', top: handle === 'top' ? -6 : handle === 'bottom' ? 'auto' : '50%', bottom: handle === 'bottom' ? -6 : 'auto', transform: handle === 'left' || handle === 'right' ? 'translateY(-50%)' : 'translateX(-50%)' }} />)}
             {selectedNodes.includes(node.id) && <button type="button" aria-label="Resize card" title="Resize card" onPointerDown={event => { event.stopPropagation(); gesture.current = { kind: 'resize', client: { x: event.clientX, y: event.clientY }, before: document, id: node.id }; workspace.current?.setPointerCapture(event.pointerId); }} className="absolute -bottom-1 -right-1 h-3 w-3 cursor-nwse-resize rounded-sm border border-slate-950 bg-cyan-300" />}
-          </article>)}
+          </article>;
+          })}
         </div>
-        <style>{'@keyframes freeform-flow{to{stroke-dashoffset:-40}}@keyframes freeform-flow-reverse{to{stroke-dashoffset:40}}@media(prefers-reduced-motion:reduce){[data-edge-id] path{animation:none!important}}'}</style>
+        <style>{'@media(prefers-reduced-motion:reduce){[data-edge-id] circle animateMotion{display:none}}'}</style>
       </div>
 
-      <aside className="min-w-0 space-y-3 border-t border-slate-700 pt-3 xl:border-l xl:border-t-0 xl:pl-3 xl:pt-0">
+      <aside className="min-w-0 space-y-3 overflow-y-auto border-t border-slate-700 pt-3 xl:border-l xl:border-t-0 xl:pl-3 xl:pt-0">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-300">{activeNode ? 'Card properties' : activeEdge ? 'Connection properties' : 'Canvas properties'}</h3>
         {activeNode ? <>
           <label className="block space-y-1 text-xs text-slate-400">Title<input className={INPUT} value={activeNode.title} onChange={event => updateNode(activeNode.id, { title: event.target.value })} /></label>
+          <label className="block space-y-1 text-xs text-slate-400">Icon<input aria-label="Card icon" className={INPUT} value={activeNode.icon ?? ''} maxLength={8} onChange={event => updateNode(activeNode.id, { icon: event.target.value })} /></label>
+          <label className="block space-y-1 text-xs text-slate-400">Card color<input aria-label="Card color" className="block h-8 w-full" type="color" value={activeNode.color ?? '#60a5fa'} onChange={event => updateNode(activeNode.id, { color: event.target.value })} /></label>
           <label className="block space-y-1 text-xs text-slate-400">Content<textarea className={`${INPUT} min-h-24 resize-y`} value={activeNode.body} onChange={event => updateNode(activeNode.id, { body: event.target.value })} /></label>
           <div className="grid grid-cols-2 gap-2">{(['width', 'height'] as const).map(key => <label key={key} className="space-y-1 text-xs capitalize text-slate-400">{key}<input className={INPUT} type="number" min="80" value={activeNode[key]} onChange={event => updateNode(activeNode.id, { [key]: Math.max(80, Number(event.target.value)) })} /></label>)}</div>
         </> : activeEdge ? <>
@@ -473,7 +479,7 @@ export function FreeformInfographicEditor({ topic, nodes }: { topic: string; nod
           <label className="block space-y-1 text-xs text-slate-400">Direction<select className={INPUT} value={activeEdge.direction} onChange={event => updateEdge(activeEdge.id, { direction: event.target.value as CanvasEdge['direction'] })}><option value="forward">Forward</option><option value="reverse">Reverse</option><option value="both">Bidirectional</option><option value="none">No arrows</option></select></label>
           <label className="block space-y-1 text-xs text-slate-400">Source<select className={INPUT} value={activeEdge.source} onChange={event => updateEdge(activeEdge.id, { source: event.target.value })}>{document.nodes.filter(node => node.id !== activeEdge.target).map(node => <option key={node.id} value={node.id}>{node.title}</option>)}</select></label>
           <label className="block space-y-1 text-xs text-slate-400">Destination<select className={INPUT} value={activeEdge.target} onChange={event => updateEdge(activeEdge.id, { target: event.target.value })}>{document.nodes.filter(node => node.id !== activeEdge.source).map(node => <option key={node.id} value={node.id}>{node.title}</option>)}</select></label>
-          <label className="flex items-center gap-2 text-xs text-slate-300"><input type="checkbox" checked={activeEdge.animation.enabled} onChange={event => updateEdge(activeEdge.id, { animation: { ...activeEdge.animation, enabled: event.target.checked } })} />Animate line and particles</label>
+          <label className="flex items-center gap-2 text-xs text-slate-300"><input type="checkbox" checked={activeEdge.animation.enabled} onChange={event => updateEdge(activeEdge.id, { animation: { ...activeEdge.animation, enabled: event.target.checked } })} />Animate particles</label>
           <label className="block space-y-1 text-xs text-slate-400">Particle speed (seconds)<input className={INPUT} type="number" min="0.25" max="20" step="0.25" value={activeEdge.animation.duration} onChange={event => updateEdge(activeEdge.id, { animation: { ...activeEdge.animation, duration: Math.max(0.25, Number(event.target.value)) } })} /></label>
           <label className="block space-y-1 text-xs text-slate-400">Particle count<input className={INPUT} type="number" min="1" max="12" value={activeEdge.animation.particles} onChange={event => updateEdge(activeEdge.id, { animation: { ...activeEdge.animation, particles: Math.max(1, Math.min(12, Number(event.target.value))) } })} /></label>
           <button type="button" className={`${BUTTON} !w-auto gap-2 px-2`} onClick={() => updateEdge(activeEdge.id, { direction: activeEdge.direction === 'reverse' ? 'forward' : 'reverse' })}><ArrowLeftRight size={14} />Reverse direction</button>

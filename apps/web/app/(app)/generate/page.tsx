@@ -44,6 +44,7 @@ export default function GeneratePage() {
   );
   const [isRunning, setIsRunning] = useState(false);
   const [done, setDone] = useState(false);
+  const [pipelineExpanded, setPipelineExpanded] = useState(true);
 
   function selectNiche(id: string) {
     setSelectedNiche(id);
@@ -55,6 +56,7 @@ export default function GeneratePage() {
   async function runPipeline() {
     setStep(3);
     setIsRunning(true);
+    setPipelineExpanded(true);
     const ids = AGENTS.map(a => a.id);
     for (const id of ids) {
       setAgentStatuses(prev => ({ ...prev, [id]: 'running' }));
@@ -63,25 +65,26 @@ export default function GeneratePage() {
     }
     setIsRunning(false);
     setDone(true);
+    setPipelineExpanded(false);
   }
 
   const nicheLabel = NICHES.find(n => n.id === selectedNiche)?.label ?? '';
 
   return (
-    <div className="p-4 sm:p-8 max-w-3xl mx-auto">
+    <div className={done ? 'h-[100dvh] overflow-hidden p-2' : 'mx-auto max-w-3xl p-4 sm:p-8'}>
 
       {/* Header */}
-      <div className="mb-8">
+      {!done && <div className="mb-8">
         <h1 className="text-2xl font-bold text-white">Generate Infographic</h1>
         <p className="text-sm mt-1" style={{ color: '#64748b' }}>
           {step === 1 && 'Step 1 of 2 · Choose your niche'}
           {step === 2 && 'Step 2 of 2 · Select or enter a topic'}
           {step === 3 && (done ? 'Done! Your infographic is ready.' : 'Running 6-agent pipeline…')}
         </p>
-      </div>
+      </div>}
 
       {/* Progress bar */}
-      {step < 3 && (
+      {!done && step < 3 && (
         <div className="flex gap-2 mb-8">
           {[1, 2].map(s => (
             <div key={s} className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: '#1e293b' }}>
@@ -183,16 +186,22 @@ export default function GeneratePage() {
 
       {/* ── Step 3: Pipeline ── */}
       {step === 3 && (
-        <div className="space-y-6">
+        <div className={done ? 'flex h-full min-h-0 flex-col gap-3' : 'space-y-6'}>
           {/* Topic summary */}
-          <div className="px-5 py-4 rounded-xl" style={{ background: '#1e293b', border: '1px solid #334155' }}>
+          <div className={`rounded-xl ${done ? 'shrink-0 px-3 py-2' : 'px-5 py-4'}`} style={{ background: '#1e293b', border: '1px solid #334155' }}>
             <p className="text-xs mb-1" style={{ color: '#64748b' }}>Generating for</p>
             <p className="text-white font-semibold">{topic}</p>
             <p className="text-xs mt-1" style={{ color: '#60a5fa' }}>{nicheLabel}</p>
           </div>
 
           {/* Agent steps */}
-          <div className="space-y-3">
+          <section className="shrink-0 overflow-hidden rounded-xl border border-slate-700" aria-label="Agent pipeline">
+            <button type="button" className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-slate-800/60" aria-expanded={pipelineExpanded} onClick={() => setPipelineExpanded(expanded => !expanded)}>
+              <span className="text-sm font-semibold text-slate-200">Agent pipeline</span>
+              <span className="text-xs text-slate-400">{AGENTS.filter(agent => agentStatuses[agent.id] === 'done').length} of {AGENTS.length} complete</span>
+              <span className="ml-auto text-slate-400" aria-hidden="true">{pipelineExpanded ? '−' : '+'}</span>
+            </button>
+            {pipelineExpanded && <div className="space-y-2 border-t border-slate-700 p-2">
             {AGENTS.map((agent, i) => {
               const status = agentStatuses[agent.id];
               const icon = status === 'done' ? '✓' : status === 'running' ? '◐' : status === 'error' ? '✗' : String(i + 1);
@@ -226,17 +235,18 @@ export default function GeneratePage() {
                 </div>
               );
             })}
-          </div>
+            </div>}
+          </section>
 
           {/* Result card — shown when done */}
           {done && (
-            <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(34,197,94,0.3)' }}>
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl" style={{ border: '1px solid rgba(34,197,94,0.3)' }}>
               <div className="px-5 py-3 flex flex-wrap items-center gap-2" style={{ background: 'rgba(34,197,94,0.08)', borderBottom: '1px solid rgba(34,197,94,0.2)' }}>
                 <span style={{ color: '#22c55e' }}>✓</span>
                 <p className="text-sm font-semibold" style={{ color: '#86efac' }}>Infographic ready!</p>
                 <span className="ml-auto text-xs" style={{ color: '#64748b' }}>Generated in ~8s</span>
               </div>
-              <div className="p-3 sm:p-5 space-y-4" style={{ background: '#0f172a' }}>
+              <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-2 sm:p-3" style={{ background: '#0f172a' }}>
 
                 {/* Rich infographic preview */}
                 <InfographicPreview topic={topic} niche={nicheLabel} />

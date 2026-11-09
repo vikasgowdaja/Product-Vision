@@ -15,6 +15,14 @@ test('freeform canvas connects cards and restores the edited document', async ({
   await generate(page, 'DevOps', topic);
   await page.getByRole('tab', { name: 'Freeform canvas' }).click();
   await expect(page.locator('article[data-node-id]')).toHaveCount(3);
+  const gitopsCard = page.locator('article[data-node-id="gitops"]');
+  await expect(gitopsCard).toContainText('🌿');
+  await expect(gitopsCard).toHaveCSS('border-color', 'rgb(34, 197, 94)');
+  await gitopsCard.click();
+  await page.getByLabel('Card icon').fill('🚀');
+  await page.getByLabel('Card color').fill('#ef4444');
+  await expect(gitopsCard).toContainText('🚀');
+  await expect(gitopsCard.locator('span span').first()).toHaveCSS('color', 'rgb(239, 68, 68)');
   await page.getByRole('button', { name: 'Add card' }).click();
   await page.getByLabel('Title', { exact: true }).fill('Added node');
 
@@ -37,6 +45,8 @@ test('freeform canvas connects cards and restores the edited document', async ({
   const svg = await readFile((await svgDownload.path())!);
   expect(svg.toString()).toContain('<svg');
   expect(svg.toString()).toContain('GitOps');
+  expect(svg.toString()).toContain('🚀');
+  expect(svg.toString()).toContain('#ef4444');
 
   const pngWaiting = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Export PNG', exact: true }).click();
@@ -56,6 +66,8 @@ test('freeform canvas connects cards and restores the edited document', async ({
   await generate(page, 'DevOps', topic);
   await page.getByRole('tab', { name: 'Freeform canvas' }).click();
   await expect(page.getByText('Added node', { exact: true })).toBeVisible();
+  await expect(page.locator('article[data-node-id="gitops"]')).toContainText('🚀');
+  await expect(page.locator('article[data-node-id="gitops"]')).toHaveCSS('border-color', 'rgb(239, 68, 68)');
   await expect(page.locator('[data-edge-id]')).toHaveCount(3);
 });
 

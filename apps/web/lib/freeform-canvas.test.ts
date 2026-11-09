@@ -32,11 +32,16 @@ test('all connector types use current node bounds and explicit anchors', () => {
 });
 
 test('documents round-trip positions, handles, curvature and animation settings', () => {
-  const document = seedDocument('Saved', [{ id: 'one', title: 'One', body: '' }, { id: 'two', title: 'Two', body: '' }]);
+  const document = seedDocument('Saved', [
+    { id: 'one', title: 'One', body: '', icon: '◆', color: '#f97316' },
+    { id: 'two', title: 'Two', body: '', icon: '●', color: '#22c55e' },
+  ]);
   document.nodes[1].position = { x: -600, y: 1300 };
   document.edges[0].controls = [{ x: 45, y: 12 }, { x: -35, y: 80 }];
   document.edges[0].animation.reverse = true;
   assert.deepEqual(restoreDocument(JSON.stringify(document)), document);
+  assert.equal(document.nodes[0].icon, '◆');
+  assert.equal(document.nodes[0].color, '#f97316');
   assert.throws(() => restoreDocument('{"version":1,"nodes":[]}'));
 });
 
