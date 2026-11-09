@@ -402,7 +402,7 @@ export function FreeformInfographicEditor({ topic, nodes }: { topic: string; nod
       : {};
 
   return <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-3" onKeyDown={onKeyDown} tabIndex={0} aria-label="Freeform infographic editor">
-    <div className="flex flex-wrap items-center gap-1 border-y border-slate-700 py-2">
+    <div className="flex shrink-0 flex-wrap items-center gap-1 border-y border-slate-700 py-2">
       <button type="button" className={`${BUTTON} ${tool === 'select' ? '!border-cyan-400 !text-cyan-200' : ''}`} title="Select and move" aria-label="Select tool" onClick={() => setTool('select')}><MousePointer2 size={16} /></button>
       <button type="button" className={`${BUTTON} ${tool === 'pan' ? '!border-cyan-400 !text-cyan-200' : ''}`} title="Pan workspace" aria-label="Pan tool" onClick={() => setTool('pan')}><Hand size={16} /></button>
       <button type="button" className={`${BUTTON} ${tool === 'connect' ? '!border-cyan-400 !text-cyan-200' : ''}`} title="Draw connections" aria-label="Connection tool" onClick={() => setTool('connect')}><Link2 size={16} /></button>
@@ -420,8 +420,8 @@ export function FreeformInfographicEditor({ topic, nodes }: { topic: string; nod
       <span className="ml-auto text-xs text-slate-400">{document.nodes.length} cards · {document.edges.length} connections</span>
     </div>
 
-    <div className="grid min-h-0 min-w-0 flex-1 gap-3 xl:grid-cols-[minmax(0,1fr)_230px]">
-      <div ref={workspace} className="relative h-full min-h-[320px] min-w-0 touch-none overflow-hidden rounded border border-slate-700 outline-none" style={{ backgroundColor: document.background.color, ...gridStyle, cursor: tool === 'pan' ? 'grab' : tool === 'connect' ? 'crosshair' : 'default' }} onWheel={onWheel} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
+    <div className="grid min-h-0 min-w-0 flex-1 gap-3 md:grid-cols-[minmax(0,1fr)_230px] md:grid-rows-[minmax(0,1fr)]">
+      <div ref={workspace} data-testid="freeform-workspace" className="relative h-full min-h-0 min-w-0 touch-none overflow-hidden rounded border border-slate-700 outline-none" style={{ backgroundColor: document.background.color, ...gridStyle, cursor: tool === 'pan' ? 'grab' : tool === 'connect' ? 'crosshair' : 'default' }} onWheel={onWheel} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
         <div className="pointer-events-none absolute inset-0" style={{ transform: `translate(${document.viewport.x}px, ${document.viewport.y}px) scale(${document.viewport.zoom})`, transformOrigin: '0 0' }}>
           <div className="absolute border border-dashed border-slate-500/60" style={{ left: document.frame.x, top: document.frame.y, width: document.frame.width, height: document.frame.height }} />
         </div>
@@ -463,7 +463,7 @@ export function FreeformInfographicEditor({ topic, nodes }: { topic: string; nod
         <style>{'@media(prefers-reduced-motion:reduce){[data-edge-id] circle animateMotion{display:none}}'}</style>
       </div>
 
-      <aside className="min-w-0 space-y-3 overflow-y-auto border-t border-slate-700 pt-3 xl:border-l xl:border-t-0 xl:pl-3 xl:pt-0">
+      <aside className="min-h-0 min-w-0 space-y-3 overflow-y-auto border-t border-slate-700 pt-3 md:border-l md:border-t-0 md:pl-3 md:pt-0">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-300">{activeNode ? 'Card properties' : activeEdge ? 'Connection properties' : 'Canvas properties'}</h3>
         {activeNode ? <>
           <label className="block space-y-1 text-xs text-slate-400">Title<input className={INPUT} value={activeNode.title} onChange={event => updateNode(activeNode.id, { title: event.target.value })} /></label>

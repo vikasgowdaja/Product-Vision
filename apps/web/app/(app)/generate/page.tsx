@@ -45,6 +45,7 @@ export default function GeneratePage() {
   const [isRunning, setIsRunning] = useState(false);
   const [done, setDone] = useState(false);
   const [pipelineExpanded, setPipelineExpanded] = useState(true);
+  const [editorMode, setEditorMode] = useState<'preview' | 'canvas'>('preview');
 
   function selectNiche(id: string) {
     setSelectedNiche(id);
@@ -246,13 +247,13 @@ export default function GeneratePage() {
                 <p className="text-sm font-semibold" style={{ color: '#86efac' }}>Infographic ready!</p>
                 <span className="ml-auto text-xs" style={{ color: '#64748b' }}>Generated in ~8s</span>
               </div>
-              <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-2 sm:p-3" style={{ background: '#0f172a' }}>
+              <div data-testid="infographic-result-body" className={`flex min-h-0 flex-1 flex-col gap-3 p-2 sm:p-3 ${editorMode === 'canvas' ? 'overflow-hidden' : 'overflow-y-auto'}`} style={{ background: '#0f172a' }}>
 
                 {/* Rich infographic preview */}
-                <InfographicPreview topic={topic} niche={nicheLabel} />
+                <InfographicPreview topic={topic} niche={nicheLabel} onEditorModeChange={setEditorMode} />
 
                 {/* LinkedIn caption */}
-                <div className="rounded-xl p-4" style={{ background: '#1e293b', border: '1px solid #334155' }}>
+                {editorMode === 'preview' && <div className="rounded-xl p-4" style={{ background: '#1e293b', border: '1px solid #334155' }}>
                   <p className="text-xs font-semibold tracking-wider mb-2" style={{ color: '#64748b' }}>LINKEDIN CAPTION</p>
                   <p className="text-sm leading-relaxed" style={{ color: '#cbd5e1' }}>
                     {topic.includes('vs') || topic.includes('VS')
@@ -263,20 +264,20 @@ export default function GeneratePage() {
                   <p className="text-xs mt-3" style={{ color: '#60a5fa' }}>
                     #{nicheLabel.replace(/\s+/g, '')} #SoftwareEngineering #TechLeadership #SystemDesign
                   </p>
-                </div>
+                </div>}
 
                 {/* Actions */}
-                <div className="flex flex-col sm:flex-row gap-3">
+                {editorMode === 'preview' && <div className="flex flex-col sm:flex-row gap-3">
                   <button className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition hover:opacity-90"
                     style={{ background: 'linear-gradient(135deg,#3b82f6,#8b5cf6)' }}>
                     Schedule to LinkedIn
                   </button>
-                  <button onClick={() => { setStep(1); setSelectedNiche(''); setTopic(''); setDone(false); setAgentStatuses(Object.fromEntries(AGENTS.map(a => [a.id, 'idle'])) as Record<AgentId, AgentStatus>); }}
+                  <button onClick={() => { setStep(1); setSelectedNiche(''); setTopic(''); setDone(false); setEditorMode('preview'); setAgentStatuses(Object.fromEntries(AGENTS.map(a => [a.id, 'idle'])) as Record<AgentId, AgentStatus>); }}
                     className="px-4 py-2.5 rounded-xl text-sm transition hover:bg-slate-700"
                     style={{ background: '#1e293b', color: '#94a3b8', border: '1px solid #334155' }}>
                     New ✦
                   </button>
-                </div>
+                </div>}
               </div>
             </div>
           )}

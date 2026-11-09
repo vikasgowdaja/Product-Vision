@@ -8,6 +8,7 @@ import { FreeformInfographicEditor } from './freeform-infographic-editor';
 interface InfographicPreviewProps {
   topic: string;
   niche: string;
+  onEditorModeChange?: (mode: 'preview' | 'canvas') => void;
 }
 
 // ── Content database ─────────────────────────────────────────────────────────
@@ -228,7 +229,7 @@ function getContent(topic: string) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function InfographicPreview({ topic, niche }: InfographicPreviewProps) {
+export function InfographicPreview({ topic, niche, onEditorModeChange }: InfographicPreviewProps) {
   const content = getContent(topic);
   const { assets } = useBrandAssets();
   const [editorMode, setEditorMode] = useState<'preview' | 'canvas'>('preview');
@@ -242,10 +243,10 @@ export function InfographicPreview({ topic, niche }: InfographicPreviewProps) {
   ];
 
   return (
-    <div className={`min-w-0 ${editorMode === 'canvas' ? 'flex h-full min-h-0 flex-1 flex-col' : 'space-y-3'}`}>
+    <div className={`min-w-0 ${editorMode === 'canvas' ? 'flex min-h-0 flex-1 flex-col' : 'space-y-3'}`}>
     <div className="flex shrink-0 gap-1 border-b border-slate-800" role="tablist" aria-label="Infographic view">
-      <button type="button" role="tab" aria-selected={editorMode === 'preview'} onClick={() => setEditorMode('preview')} className={`border-b-2 px-3 py-2 text-xs ${editorMode === 'preview' ? 'border-cyan-400 text-cyan-200' : 'border-transparent text-slate-400 hover:text-slate-200'}`}>Preview and animation</button>
-      <button type="button" role="tab" aria-selected={editorMode === 'canvas'} onClick={() => setEditorMode('canvas')} className={`border-b-2 px-3 py-2 text-xs ${editorMode === 'canvas' ? 'border-cyan-400 text-cyan-200' : 'border-transparent text-slate-400 hover:text-slate-200'}`}>Freeform canvas</button>
+      <button type="button" role="tab" aria-selected={editorMode === 'preview'} onClick={() => { setEditorMode('preview'); onEditorModeChange?.('preview'); }} className={`border-b-2 px-3 py-2 text-xs ${editorMode === 'preview' ? 'border-cyan-400 text-cyan-200' : 'border-transparent text-slate-400 hover:text-slate-200'}`}>Preview and animation</button>
+      <button type="button" role="tab" aria-selected={editorMode === 'canvas'} onClick={() => { setEditorMode('canvas'); onEditorModeChange?.('canvas'); }} className={`border-b-2 px-3 py-2 text-xs ${editorMode === 'canvas' ? 'border-cyan-400 text-cyan-200' : 'border-transparent text-slate-400 hover:text-slate-200'}`}>Freeform canvas</button>
     </div>
     {editorMode === 'canvas' ? <FreeformInfographicEditor topic={topic} nodes={canvasNodes} /> :
     <InfographicAnimationEditor key={topic} topic={topic} layout={content?.type ?? 'tips'}>

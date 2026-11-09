@@ -71,6 +71,33 @@ test('freeform canvas connects cards and restores the edited document', async ({
   await expect(page.locator('[data-edge-id]')).toHaveCount(3);
 });
 
+test('freeform editor does not overlap the caption and actions at viewport height', async ({ page }) => {
+  await generate(page, 'Tech Leadership', 'Common Mistakes to Avoid');
+  await page.setViewportSize({ width: 1024, height: 600 });
+  await page.getByRole('tab', { name: 'Freeform canvas' }).click();
+  await expect(page.getByText('LINKEDIN CAPTION', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Schedule to LinkedIn', exact: true })).toHaveCount(0);
+
+  const bounds = await page.evaluate(() => {
+    const editor = document.querySelector('[aria-label="Freeform infographic editor"]');
+    const workspace = document.querySelector('[data-testid="freeform-workspace"]');
+    const properties = editor?.querySelector('aside');
+    const body = document.querySelector('[data-testid="infographic-result-body"]');
+    if (!workspace || !properties || !body) return null;
+    const workspaceRect = workspace.getBoundingClientRect();
+    const propertiesRect = properties.getBoundingClientRect();
+    const bodyRect = body.getBoundingClientRect();
+    return { workspaceBottom: workspaceRect.bottom, propertiesBottom: propertiesRect.bottom, bodyBottom: bodyRect.bottom };
+  });
+
+  expect(bounds).not.toBeNull();
+  expect(bounds!.workspaceBottom).toBeLessThanOrEqual(bounds!.bodyBottom + 1);
+  expect(bounds!.propertiesBottom).toBeLessThanOrEqual(bounds!.bodyBottom + 1);
+  await page.getByRole('tab', { name: 'Preview and animation' }).click();
+  await expect(page.getByText('LINKEDIN CAPTION', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Schedule to LinkedIn', exact: true })).toBeVisible();
+});
+
 test('uploads persist and static and animated exports contain real content', async ({ page }, testInfo) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
